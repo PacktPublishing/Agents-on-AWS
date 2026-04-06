@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Deploy a Strands document analysis agent to Lambda (Chapter 6)
+
+Globals:
+  Function:
+    Timeout: 900
+    MemorySize: 1024
+
+Parameters:
+  Architecture:
+    Type: String
+    Default: arm64
+    AllowedValues:
+      - arm64
+      - x86_64
+    Description: "Lambda architecture. Use arm64 for Apple Silicon / Graviton, x86_64 for Intel."
+
+Resources:
+  DocumentAnalysisFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      Architectures:
+        - !Ref Architecture
+      Environment:
+        Variables:
+          MODEL_ID: us.anthropic.claude-sonnet-4-20250514-v1:0
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource:
+                - "arn:aws:bedrock:*::foundation-model/*"
+                - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+        - S3ReadPolicy:
+            BucketName: !Ref DocumentBucket
+      Events:
+        AnalyzeContract:
+          Type: Api
+          Properties:
+            Path: /analyze
+            Method: post
+    Metadata:
+      DockerTag: v1
+      DockerContext: ./src
+      Dockerfile: Dockerfile
+
+  DocumentBucket:
+    Type: AWS::S3::Bucket
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/analyze/"

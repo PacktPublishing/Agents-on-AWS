@@ -1,0 +1,6 @@
+strands-agents[a2a]
+strands-agents-tools
+mcp[cli]>=1.6.0
+httpx
+yfinance
+bedrock-agentcore

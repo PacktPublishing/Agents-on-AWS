@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hospital Scheduling Agent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f2f5;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: #1a73e8;
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  header svg { flex-shrink: 0; }
+  header h1 { font-size: 18px; font-weight: 600; }
+  header p { font-size: 13px; opacity: 0.85; }
+  .chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .msg {
+    max-width: 720px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    line-height: 1.55;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .msg.user {
+    background: #1a73e8;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.agent {
+    background: white;
+    color: #1e1e1e;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .msg.agent .label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a73e8;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .msg.thinking {
+    background: white;
+    color: #888;
+    align-self: flex-start;
+    font-style: italic;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .dot-pulse::after {
+    content: '';
+    animation: dots 1.5s steps(4,end) infinite;
+  }
+  @keyframes dots {
+    0%   { content: ''; }
+    25%  { content: '.'; }
+    50%  { content: '..'; }
+    75%  { content: '...'; }
+  }
+  .input-bar {
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    padding: 16px 24px;
+    display: flex;
+    gap: 12px;
+  }
+  .input-bar textarea {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    min-height: 48px;
+    max-height: 120px;
+  }
+  .input-bar textarea:focus { border-color: #1a73e8; }
+  .input-bar button {
+    background: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .input-bar button:hover { background: #1557b0; }
+  .input-bar button:disabled { background: #94bef7; cursor: not-allowed; }
+  .suggestions {
+    padding: 16px 24px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .suggestions button {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #444;
+  }
+  .suggestions button:hover { border-color: #1a73e8; color: #1a73e8; }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+  </svg>
+  <div>
+    <h1>Hospital Scheduling Agent</h1>
+    <p>AI-powered surgical scheduling on ECS Fargate</p>
+  </div>
+</header>
+
+<div class="suggestions" id="suggestions">
+  <button onclick="useSuggestion(this)">Schedule a knee arthroscopy for patient P-1234 with Dr. Smith on 2026-03-18</button>
+  <button onclick="useSuggestion(this)">Is Dr. Johnson available next Wednesday for a hip replacement?</button>
+  <button onclick="useSuggestion(this)">Book the earliest slot for patient P-5678 with Dr. Lee for a shoulder repair</button>
+</div>
+
+<div class="chat" id="chat"></div>
+
+<div class="input-bar">
+  <textarea id="input" rows="1" placeholder="Ask the scheduling agent..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"></textarea>
+  <button id="sendBtn" onclick="send()">Send</button>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const suggestions = document.getElementById('suggestions');
+
+// Conversation history sent with every request so the agent
+// remembers what the user said in previous turns.
+const history = [];
+
+function addMsg(text, cls) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + cls;
+  if (cls === 'agent') {
+    d.innerHTML = '<div class="label">Scheduling Agent</div>' + escapeHtml(text);
+  } else {
+    d.textContent = text;
+  }
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+  return d;
+}
+
+function escapeHtml(t) {
+  const d = document.createElement('div');
+  d.textContent = t;
+  return d.innerHTML;
+}
+
+function useSuggestion(btn) {
+  input.value = btn.textContent;
+  suggestions.style.display = 'none';
+  send();
+}
+
+async function send() {
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  suggestions.style.display = 'none';
+  sendBtn.disabled = true;
+
+  addMsg(msg, 'user');
+  const thinking = addMsg('Checking schedules', 'thinking');
+  thinking.innerHTML += '<span class="dot-pulse"></span>';
+
+  try {
+    const res = await fetch('/schedule', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ message: msg, history: history })
+    });
+    thinking.remove();
+    if (res.ok) {
+      const text = await res.text();
+      addMsg(text, 'agent');
+      // Append both turns so the next request carries full context
+      history.push({ role: 'user', content: msg });
+      history.push({ role: 'assistant', content: text });
+    } else {
+      addMsg('Something went wrong. Status: ' + res.status, 'agent');
+    }
+  } catch (e) {
+    thinking.remove();
+    addMsg('Connection error: ' + e.message, 'agent');
+  }
+  sendBtn.disabled = false;
+  input.focus();
+}
+
+// Auto-resize textarea
+input.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+</script>
+</body>
+</html>
