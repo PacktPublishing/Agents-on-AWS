@@ -7,9 +7,11 @@ A collection of examples for building agentic AI applications using AWS services
 | Chapter | Topic |
 |---|---|
 | [Chapter 1](chapter%201/) | Hello World Agents — Strands & LangGraph |
+| [Chapter 2](chapter%202/) | Building Agents with Tools — function tools, prebuilt tools, AWS integration |
 | [Chapter 3](chapter%203/) | Agent Memory — Strands & LangGraph with AgentCore |
+| [Chapter 4](chapter%204/) | Advanced Agent Patterns — supervisor-worker, swarm, graph |
 | [Chapter 5](chapter%205/) | MCP and A2A Protocol Examples |
-| [Chapter 6](chapter%206/) | Deploying MCP & A2A on AgentCore |
+| [Chapter 6](chapter%206/) | Deploying Agents to Production — AgentCore, ECS, Lambda |
 
 ---
 
