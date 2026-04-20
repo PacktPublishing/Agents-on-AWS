@@ -1,0 +1,43 @@
+{
+    "llmAsAJudge": {
+        "modelConfig": {
+            "bedrockEvaluatorModelConfig": {
+                "modelId": "us.anthropic.claude-3-5-haiku-20241022-v1:0",
+                "inferenceConfig": {
+                    "maxTokens": 500,
+                    "temperature": 1.0
+                }
+            }
+        },
+        "instructions": "You are evaluating the quality of a travel assistant's response.\n\nYou are given the conversation context and the assistant's response.\n\nEvaluate whether the response:\n1. Accurately answers the travel-related question\n2. Stays within the travel domain (flights, hotels, weather)\n3. Provides actionable and useful travel information\n\n**IMPORTANT**: The assistant should ONLY answer travel-related questions. If the user asks about non-travel topics and the assistant answers them, classify as Very Poor.\n\nContext: {context}\nCandidate Response: {assistant_turn}",
+        "ratingScale": {
+            "numerical": [
+                {
+                    "value": 1.0,
+                    "label": "Very Good",
+                    "definition": "Response is accurate, helpful, and directly addresses the travel question with all relevant details."
+                },
+                {
+                    "value": 0.75,
+                    "label": "Good",
+                    "definition": "Response is mostly accurate and helpful with minor gaps or imprecisions."
+                },
+                {
+                    "value": 0.50,
+                    "label": "OK",
+                    "definition": "Response partially addresses the question but is missing important travel details."
+                },
+                {
+                    "value": 0.25,
+                    "label": "Poor",
+                    "definition": "Response is mostly unhelpful or contains significant inaccuracies."
+                },
+                {
+                    "value": 0.0,
+                    "label": "Very Poor",
+                    "definition": "Response is completely wrong, irrelevant, or answers out-of-scope questions."
+                }
+            ]
+        }
+    }
+}
