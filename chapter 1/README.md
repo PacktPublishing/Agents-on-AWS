@@ -2,7 +2,25 @@
 
 Minimal examples of building AI agents with Amazon Bedrock using two different frameworks.
 
-## Examples
+## Notebook
+
+### `hello_world_strands.ipynb` — Start here
+
+The recommended way to get started. Opens in Jupyter and walks you through building your first Strands agent step by step:
+
+1. Install dependencies
+2. Create a basic agent with one line of code
+3. Add a tool using the `@tool` decorator
+4. Use a prebuilt tool
+5. Set a system prompt
+
+```bash
+jupyter notebook hello_world_strands.ipynb
+```
+
+---
+
+## Scripts
 
 ### 1. Strands Agents (`hello_world_agent.py`)
 
