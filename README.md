@@ -4,14 +4,15 @@ A collection of examples for building agentic AI applications using AWS services
 
 ## Chapters
 
-| Chapter | Topic |
-|---|---|
-| [Chapter 1](chapter%201/) | Hello World Agents — Strands & LangGraph |
-| [Chapter 2](chapter%202/) | Building Agents with Tools — function tools, prebuilt tools, AWS integration |
-| [Chapter 3](chapter%203/) | Agent Memory — Strands & LangGraph with AgentCore |
-| [Chapter 4](chapter%204/) | Advanced Agent Patterns — supervisor-worker, swarm, graph |
-| [Chapter 5](chapter%205/) | MCP and A2A Protocol Examples |
-| [Chapter 6](chapter%206/) | Deploying Agents to Production — AgentCore, ECS, Lambda |
+| Chapter | Topic | Key Concepts |
+|---|---|---|
+| [Chapter 1](chapter%201/) | Hello World Agents | First agent with Strands, LangGraph basics |
+| [Chapter 2](chapter%202/) | Building Agents with Tools | `@tool` decorator, prebuilt tools, AWS integration |
+| [Chapter 3](chapter%203/) | Agent Memory | Short-term memory with LangGraph + AgentCore, long-term memory with Mem0 |
+| [Chapter 4](chapter%204/) | Advanced Agent Patterns | Supervisor-worker, swarm, graph-based routing |
+| [Chapter 5](chapter%205/) | MCP and A2A Protocols | MCP server/client, Agent-to-Agent communication |
+| [Chapter 6](chapter%206/) | Deploying Agents to Production | AgentCore Runtime, ECS, Lambda deployments |
+| [Chapter 7](chapter%207/) | Evaluation and Observability | LLM-as-judge evaluation, OpenTelemetry tracing, Bedrock Guardrails |
 
 ---
 
