@@ -1,21 +1,27 @@
 # Chapter 7: Evaluation, Observability, and Governance
 
+Code examples from Chapter 7 of *Agents on AWS*.
+
 This chapter covers production-readiness for AI agents — how to measure how well your agent is performing, monitor what it is doing, and enforce policies on what it is allowed to do.
 
 ## Structure
 
 ```
 chapter 7/
-├── agent-evaluation/       # End-to-end agent evaluation
-│   ├── end_to_end_eval.ipynb   # Full evaluation lifecycle notebook
-│   ├── agent_app.py            # Travel assistant agent (deployed to AgentCore)
+├── agent-evaluation/           # End-to-end agent evaluation
+│   ├── end_to_end_eval.ipynb       # Full evaluation lifecycle notebook
+│   ├── agent_app.py                # Travel assistant agent (deployed to AgentCore)
 │   ├── travel_quality_metric.json  # Custom LLM-as-judge evaluator config
 │   └── requirements.txt
 │
-└── agent-observability/    # Tracing, monitoring, and governance
-    ├── observability.ipynb     # 5 ways to trace a Strands agent
-    ├── governance.ipynb        # Content filtering and tool-call policies
-    └── agentcore_agent.py      # Agent script for ADOT/CloudWatch instrumentation
+├── agent-observability/        # Tracing and monitoring
+│   ├── observability.ipynb         # 5 ways to trace a Strands agent
+│   ├── agentcore_agent.py          # Agent script for ADOT / CloudWatch instrumentation
+│   └── README.md
+│
+└── ai-governance/              # Policies and guardrails
+    ├── governance.ipynb            # Bedrock Guardrails and AgentCore Policy
+    └── README.md
 ```
 
 ---
@@ -27,7 +33,7 @@ chapter 7/
 Full evaluation lifecycle in a single notebook:
 
 | Step | What happens |
-|---|---|
+|------|-------------|
 | 1 | Deploy a travel assistant agent to AgentCore Runtime via CodeBuild |
 | 2 | Create a custom LLM-as-judge evaluator (5-point scale) |
 | 3 | Invoke the agent with in-scope and out-of-scope prompts |
@@ -57,7 +63,7 @@ Run all cells top to bottom. First deployment takes ~10 minutes (CodeBuild).
 Walks through 5 ways to trace a Strands agent using OpenTelemetry:
 
 | Approach | What you get |
-|---|---|
+|----------|-------------|
 | Console exporter | Print spans to stdout — no setup required |
 | Jaeger | Local Docker container with a visual trace UI |
 | Langfuse | Open-source LLM observability platform |
@@ -67,7 +73,7 @@ Walks through 5 ways to trace a Strands agent using OpenTelemetry:
 **Quick start:**
 ```bash
 cd agent-observability
-pip install strands-agents strands-agents-tools boto3
+pip install 'strands-agents[otel]' strands-agents-tools boto3
 jupyter notebook observability.ipynb
 ```
 
@@ -80,19 +86,29 @@ docker run -d --name jaeger \
 # Open http://localhost:16686
 ```
 
+---
+
+## Part 3: Governance (`ai-governance/`)
+
 ### governance.ipynb
 
-Demonstrates two governance mechanisms:
+Demonstrates two complementary governance mechanisms:
 
 | Mechanism | Controls |
-|---|---|
+|-----------|---------|
 | Bedrock Guardrails | What the agent *says* — content filters, denied topics, PII detection |
-| Cedar Policies via AgentCore Policy | What the agent *does* — deterministic tool-call control |
+| AgentCore Policy (Cedar) | What the agent *does* — deterministic tool-call control |
+
+Also shows the gap between the two: guardrails filter text but do not intercept tool calls, which is exactly what Cedar policies are designed to address.
 
 **Quick start:**
 ```bash
+cd ai-governance
+pip install strands-agents strands-agents-tools boto3
 jupyter notebook governance.ipynb
 ```
+
+More notebooks will be added to `ai-governance/` as the chapter expands (AgentCore Policy, audit logging, etc.).
 
 ---
 
@@ -100,6 +116,6 @@ jupyter notebook governance.ipynb
 
 - Python 3.10+
 - AWS credentials configured (`aws configure`)
-- Amazon Bedrock model access enabled (Claude Haiku or Nova Lite)
+- Amazon Bedrock model access enabled (Claude Sonnet or Nova Lite)
 - IAM permissions: `bedrock-agentcore:*`, `bedrock:*`, `ecr:*`, `codebuild:*`, `s3:*`, `logs:*`, `iam:CreateRole`
-- Docker (optional — only needed for Jaeger in observability.ipynb)
+- Docker — optional, only needed for Jaeger in `observability.ipynb`

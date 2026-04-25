@@ -9,10 +9,10 @@ A collection of examples for building agentic AI applications using AWS services
 | [Chapter 1](chapter%201/) | Hello World Agents | First agent with Strands, LangGraph basics |
 | [Chapter 2](chapter%202/) | Building Agents with Tools | `@tool` decorator, prebuilt tools, AWS integration |
 | [Chapter 3](chapter%203/) | Agent Memory | Short-term memory with LangGraph + AgentCore, long-term memory with Mem0 |
-| [Chapter 4](chapter%204/) | Advanced Agent Patterns | Supervisor-worker, swarm, graph-based routing |
+| [Chapter 4](chapter%204/) | Advanced Agent Patterns | Supervisor-worker, agent-as-tool, graph-based routing, swarm |
 | [Chapter 5](chapter%205/) | MCP and A2A Protocols | MCP server/client, Agent-to-Agent communication |
 | [Chapter 6](chapter%206/) | Deploying Agents to Production | AgentCore Runtime, ECS, Lambda deployments |
-| [Chapter 7](chapter%207/) | Evaluation and Observability | LLM-as-judge evaluation, OpenTelemetry tracing, Bedrock Guardrails |
+| [Chapter 7](chapter%207/) | Evaluation, Observability, and Governance | LLM-as-judge evaluation, OpenTelemetry tracing, Bedrock Guardrails, AgentCore Policy |
 
 ---
 
