@@ -16,7 +16,7 @@ Key concepts covered:
 
 ### 2. LangGraph with AgentCore Memory Checkpointer (`agentcorememory_with_langgraph/`)
 
-Demonstrates short-term conversational memory using [LangGraph](https://github.com/langchain-ai/langgraph) with the [Amazon Bedrock AgentCore Memory](https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-memory.html) checkpointer. A math agent performs multi-step calculations while maintaining conversation state across turns.
+Demonstrates session-persistent conversational memory using [LangGraph](https://github.com/langchain-ai/langgraph) with the [Amazon Bedrock AgentCore Memory](https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore-memory.html) checkpointer. A math agent performs multi-step calculations while maintaining conversation state across turns and across sessions.
 
 Key concepts covered:
 - AgentCore Memory as a LangGraph checkpointer backend
@@ -36,7 +36,7 @@ Each example includes its own dependency list. Install requirements before runni
 
 ```bash
 # For the LangGraph example
-pip install -r agentcorememory_with_langgraph/requirements(4).txt
+pip install -r agentcorememory_with_langgraph/requirements.txt
 
 # For the Strands Agents example, dependencies are installed in the first notebook cell
 ```

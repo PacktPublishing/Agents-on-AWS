@@ -24,7 +24,7 @@ jupyter notebook hello_world_strands.ipynb
 
 ### 1. Strands Agents (`hello_world_agent.py`)
 
-The simplest possible agent — one import, two lines of code. Uses the [Strands Agents SDK](https://github.com/strands-agents/sdk-python) with Bedrock as the default model provider.
+A minimal Strands agent using Nova Lite on Bedrock. Explicitly sets the model to `us.amazon.nova-lite-v1:0` — reliable and always available.
 
 ```bash
 python hello_world_agent.py
@@ -52,7 +52,7 @@ python hello_world_langgraph_agent.py
 
 ### Use Strands Agents when:
 - You want the fastest path from zero to a working agent
-- Your stack is AWS-native (Bedrock, SageMaker, AgentCore)
+- Your stack is AWS-native (Bedrock, AgentCore)
 - You need built-in tool support (file I/O, web search, code execution) with minimal wiring
 - You're building internal tools, prototypes, or single-purpose agents
 - You prefer convention over configuration — sensible defaults, less boilerplate
@@ -94,4 +94,4 @@ Going to production with complex workflows?   → LangGraph
 pip install -r requirements.txt
 ```
 
-> **Note on Bedrock model access:** Models require explicit access in the AWS Console (Bedrock → Model Access). Access can expire after 15 days of inactivity — if you get a `ResourceNotFoundException: Legacy model` error, re-enable the model or switch to `us.amazon.nova-lite-v1:0` which is always available without approval.
+> **Note on Bedrock model access:** Models are enabled by default in your AWS account. If you get an `AccessDeniedException`, check that your IAM credentials have `bedrock:InvokeModel` permissions and that your region is correct.

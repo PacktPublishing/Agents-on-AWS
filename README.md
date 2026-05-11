@@ -1,6 +1,6 @@
 # AI Agents on AWS
 
-A collection of examples for building agentic AI applications using AWS services including Amazon Bedrock, SageMaker, and AgentCore.
+A collection of examples for building agentic AI applications using AWS services including Amazon Bedrock and AgentCore, using the Strands Agents SDK.
 
 ## Chapters
 
@@ -8,7 +8,7 @@ A collection of examples for building agentic AI applications using AWS services
 |---|---|---|
 | [Chapter 1](chapter%201/) | Hello World Agents | First agent with Strands, LangGraph basics |
 | [Chapter 2](chapter%202/) | Building Agents with Tools | `@tool` decorator, prebuilt tools, AWS integration |
-| [Chapter 3](chapter%203/) | Agent Memory | Short-term memory with LangGraph + AgentCore, long-term memory with Mem0 |
+| [Chapter 3](chapter%203/) | Agent Memory | Personalized memory with Strands + Mem0, session persistence with LangGraph + AgentCore Memory checkpointer |
 | [Chapter 4](chapter%204/) | Advanced Agent Patterns | Supervisor-worker, agent-as-tool, graph-based routing, swarm |
 | [Chapter 5](chapter%205/) | MCP and A2A Protocols | MCP server/client, Agent-to-Agent communication |
 | [Chapter 6](chapter%206/) | Deploying Agents to Production | AgentCore Runtime, ECS, Lambda deployments |
@@ -22,7 +22,7 @@ A collection of examples for building agentic AI applications using AWS services
 
 #### Step 1: Create or update your SageMaker execution role
 
-Your Studio domain execution role needs the following permissions. Add this as an inline policy in IAM:
+Your Studio domain execution role needs the following permissions. Attach this as an inline policy to your Studio domain execution role in IAM:
 
 ```json
 {
@@ -33,17 +33,21 @@ Your Studio domain execution role needs the following permissions. Add this as a
       "Action": [
         "bedrock:InvokeModel",
         "bedrock:InvokeModelWithResponseStream",
-        "bedrock:ListFoundationModels"
+        "bedrock:ListFoundationModels",
+        "bedrock:CreateGuardrail",
+        "bedrock:DeleteGuardrail",
+        "bedrock:GetGuardrail"
       ],
       "Resource": "*"
     },
     {
       "Effect": "Allow",
       "Action": [
-        "sagemaker:InvokeEndpoint",
-        "sagemaker:DescribeEndpoint",
-        "sagemaker:ListInferenceComponents",
-        "sagemaker:DescribeInferenceComponent"
+        "bedrock-agentcore:InvokeAgentRuntime",
+        "bedrock-agentcore:CreateAgentRuntime",
+        "bedrock-agentcore:GetAgentRuntime",
+        "bedrock-agentcore:ListAgentRuntimes",
+        "bedrock-agentcore:DeleteAgentRuntime"
       ],
       "Resource": "*"
     },
@@ -59,9 +63,12 @@ Your Studio domain execution role needs the following permissions. Add this as a
     {
       "Effect": "Allow",
       "Action": [
-        "bedrock-agentcore:InvokeAgentRuntime",
-        "bedrock-agentcore:CreateAgentRuntime",
-        "bedrock-agentcore:GetAgentRuntime"
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:CreateRepository",
+        "ecr:BatchDeleteImage",
+        "ecr:DescribeRepositories"
       ],
       "Resource": "*"
     },
@@ -70,7 +77,33 @@ Your Studio domain execution role needs the following permissions. Add this as a
       "Action": [
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
-        "logs:PutLogEvents"
+        "logs:PutLogEvents",
+        "logs:GetLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:DeleteLogGroup"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:AttachRolePolicy",
+        "iam:PassRole",
+        "iam:GetRole",
+        "iam:DeleteRole",
+        "iam:DetachRolePolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "codebuild:StartBuild",
+        "codebuild:BatchGetBuilds",
+        "codebuild:CreateProject",
+        "codebuild:DeleteProject"
       ],
       "Resource": "*"
     }
@@ -78,49 +111,42 @@ Your Studio domain execution role needs the following permissions. Add this as a
 }
 ```
 
-#### Step 2: Enable Bedrock model access
+#### Step 2: Verify Bedrock model access
 
-Go to **AWS Console → Amazon Bedrock → Model Access** and enable:
-- Amazon Nova Lite / Pro
-- Anthropic Claude Haiku / Sonnet
-- Any other models used in the examples
+Amazon Bedrock models are enabled by default in your AWS account. No manual approval is needed.
 
-> **Important:** Bedrock model access must be enabled per region. If you get a `ResourceNotFoundException` with "Legacy model" or "Access denied", the model access has expired (Bedrock revokes access after 15 days of inactivity). Re-request access in the console or switch to an active model like `us.amazon.nova-lite-v1:0` which doesn't require approval.
+If you get an `AccessDeniedException`, check that your execution role has `bedrock:InvokeModel` permissions (covered in Step 1) and that you are in a region where Bedrock is available (e.g. `us-east-1`).
 
-**Recommended active models (no approval required):**
-- `us.amazon.nova-lite-v1:0` — fast, cheap, always available
-- `us.amazon.nova-pro-v1:0` — more capable
-
-**Models requiring approval (may expire after inactivity):**
+The examples in this book use the following models:
+- `us.amazon.nova-lite-v1:0`
 - `us.anthropic.claude-3-5-haiku-20241022-v1:0`
-- `us.anthropic.claude-3-5-sonnet-20241022-v2:0`
+- `us.anthropic.claude-sonnet-4-20250514-v1:0`
+- `us.anthropic.claude-sonnet-4-5-20250929-v1:0`
 
 #### Step 3: Configure your Studio Space
 
-- Instance type: `ml.t3.medium` minimum (use `ml.g5.2xlarge` for local model testing)
-- Disk size: at least **50 GB** (increase in Space settings)
+- Instance type: `ml.m5.large` recommended (2 vCPU, 8 GB RAM) — Chapter 3 installs heavy packages (faiss, qdrant, scikit-learn) and Chapter 5 runs multiple local servers simultaneously
+- Disk size: at least **20 GB** recommended — Python packages across all chapters are substantial, and Chapter 6 builds Docker images locally which requires additional space
 
-#### Step 4: Clone and install
+#### Step 4: Clone the repository
 
 ```bash
-git clone https://github.com/PacktPublishing/Agentic-with-AWS
-cd Agentic-with-AWS
-pip install -r requirements.txt
+git clone https://github.com/PacktPublishing/AI-Agents-on-AWS
+cd AI-Agents-on-AWS
 ```
 
-Or install per chapter:
+Install dependencies per chapter — each chapter has its own `requirements.txt`:
 
 ```bash
-pip install strands-agents strands-agents-tools boto3 \
-            langchain langchain-aws langgraph \
-            bedrock-agentcore bedrock-agentcore-starter-toolkit
+# Example for Chapter 1
+cd "chapter 1"
+pip install -r requirements.txt
 ```
 
 #### Step 5: Set environment variables
 
 ```bash
 export AWS_DEFAULT_REGION=us-east-1
-export BYPASS_TOOL_CONSENT=true   # required for Strands agents
 ```
 
 ---
@@ -165,19 +191,21 @@ Your IAM user or role needs the following policy:
       "Action": [
         "bedrock:InvokeModel",
         "bedrock:InvokeModelWithResponseStream",
-        "bedrock:ListFoundationModels"
+        "bedrock:ListFoundationModels",
+        "bedrock:CreateGuardrail",
+        "bedrock:DeleteGuardrail",
+        "bedrock:GetGuardrail"
       ],
       "Resource": "*"
     },
     {
       "Effect": "Allow",
       "Action": [
-        "sagemaker:InvokeEndpoint",
-        "sagemaker:DescribeEndpoint",
-        "sagemaker:ListInferenceComponents",
-        "sagemaker:DescribeInferenceComponent",
-        "sagemaker:CreateTrainingJob",
-        "sagemaker:DescribeTrainingJob"
+        "bedrock-agentcore:InvokeAgentRuntime",
+        "bedrock-agentcore:CreateAgentRuntime",
+        "bedrock-agentcore:GetAgentRuntime",
+        "bedrock-agentcore:ListAgentRuntimes",
+        "bedrock-agentcore:DeleteAgentRuntime"
       ],
       "Resource": "*"
     },
@@ -193,38 +221,47 @@ Your IAM user or role needs the following policy:
     {
       "Effect": "Allow",
       "Action": [
-        "bedrock-agentcore:InvokeAgentRuntime",
-        "bedrock-agentcore:CreateAgentRuntime",
-        "bedrock-agentcore:GetAgentRuntime",
-        "bedrock-agentcore:ListAgentRuntimes"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": "iam:PassRole",
-      "Resource": "arn:aws:iam::*:role/SageMaker*",
-      "Condition": {
-        "StringEquals": {
-          "iam:PassedToService": "sagemaker.amazonaws.com"
-        }
-      }
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
         "ecr:GetAuthorizationToken",
         "ecr:BatchGetImage",
-        "ecr:GetDownloadUrlForLayer"
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:CreateRepository",
+        "ecr:BatchDeleteImage",
+        "ecr:DescribeRepositories"
       ],
       "Resource": "*"
     },
     {
       "Effect": "Allow",
       "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
         "logs:GetLogEvents",
+        "logs:DescribeLogGroups",
         "logs:DescribeLogStreams",
-        "logs:DescribeLogGroups"
+        "logs:DeleteLogGroup"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:AttachRolePolicy",
+        "iam:PassRole",
+        "iam:GetRole",
+        "iam:DeleteRole",
+        "iam:DetachRolePolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "codebuild:StartBuild",
+        "codebuild:BatchGetBuilds",
+        "codebuild:CreateProject",
+        "codebuild:DeleteProject"
       ],
       "Resource": "*"
     }
@@ -232,19 +269,18 @@ Your IAM user or role needs the following policy:
 }
 ```
 
-#### Step 3: Enable Bedrock model access
+#### Step 3: Verify Bedrock model access
 
-Same as SageMaker Studio — go to **AWS Console → Amazon Bedrock → Model Access** and enable the models you need. Make sure the region matches your `AWS_DEFAULT_REGION`.
-
-> **Important:** Model access is per-region and expires after 15 days of inactivity. If you get `ResourceNotFoundException: Legacy model`, re-request access or use `us.amazon.nova-lite-v1:0` which is always available without approval.
+Same as SageMaker Studio — Bedrock models are enabled by default. If you get an `AccessDeniedException`, check that your IAM user or role has `bedrock:InvokeModel` permissions (covered in Step 2) and that your `AWS_DEFAULT_REGION` is set to a region where Bedrock is available.
 
 #### Step 4: Install dependencies
 
+Install per chapter — each chapter has its own `requirements.txt`:
+
 ```bash
-pip install strands-agents strands-agents-tools boto3 \
-            langchain langchain-aws langgraph \
-            bedrock-agentcore bedrock-agentcore-starter-toolkit \
-            sagemaker
+# Example for Chapter 1
+cd "chapter 1"
+pip install -r requirements.txt
 ```
 
 #### Step 5: Set environment variables
@@ -253,7 +289,6 @@ Add to your shell profile (`~/.bashrc`, `~/.zshrc`) or a `.env` file:
 
 ```bash
 export AWS_DEFAULT_REGION=us-east-1
-export BYPASS_TOOL_CONSENT=true
 ```
 
 For Kiro, credentials are picked up automatically from `~/.aws/credentials` or environment variables — no additional configuration needed.
@@ -267,11 +302,6 @@ import boto3
 bedrock = boto3.client("bedrock", region_name="us-east-1")
 models = bedrock.list_foundation_models()
 print(f"✅ Bedrock OK — {len(models['modelSummaries'])} models available")
-
-# Test SageMaker
-sm = boto3.client("sagemaker", region_name="us-east-1")
-endpoints = sm.list_endpoints()
-print(f"✅ SageMaker OK — {len(endpoints['Endpoints'])} endpoints")
 ```
 
 ---
@@ -282,10 +312,9 @@ print(f"✅ SageMaker OK — {len(endpoints['Endpoints'])} endpoints")
 |---|---|---|
 | AWS credentials | Automatic (execution role) | `aws configure` or env vars |
 | IAM permissions | Attach to execution role | Attach to IAM user/role |
-| Bedrock model access | Enable in console | Enable in console |
+| Bedrock model access | Enabled by default | Enabled by default |
 | Python packages | `pip install` in notebook | `pip install` locally |
 | Region | Set in Studio domain | `AWS_DEFAULT_REGION` env var |
-| `BYPASS_TOOL_CONSENT` | Set in terminal | Set in shell profile |
 
 ## Requirements
 

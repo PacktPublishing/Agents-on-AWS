@@ -1,6 +1,6 @@
 # Chapter 7: Evaluation, Observability, and Governance
 
-Code examples from Chapter 7 of *Agents on AWS*.
+Code examples from Chapter 7 of *AI Agents on AWS*.
 
 This chapter covers production-readiness for AI agents — how to measure how well your agent is performing, monitor what it is doing, and enforce policies on what it is allowed to do.
 
@@ -12,7 +12,8 @@ chapter 7/
 │   ├── end_to_end_eval.ipynb       # Full evaluation lifecycle notebook
 │   ├── agent_app.py                # Travel assistant agent (deployed to AgentCore)
 │   ├── travel_quality_metric.json  # Custom LLM-as-judge evaluator config
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── README.md
 │
 ├── agent-observability/        # Tracing and monitoring
 │   ├── observability.ipynb         # 5 ways to trace a Strands agent
@@ -73,7 +74,7 @@ Walks through 5 ways to trace a Strands agent using OpenTelemetry:
 **Quick start:**
 ```bash
 cd agent-observability
-pip install 'strands-agents[otel]' strands-agents-tools boto3
+pip install 'strands-agents[otel]' strands-agents-tools boto3 aws-opentelemetry-distro
 jupyter notebook observability.ipynb
 ```
 
@@ -116,6 +117,6 @@ More notebooks will be added to `ai-governance/` as the chapter expands (AgentCo
 
 - Python 3.10+
 - AWS credentials configured (`aws configure`)
-- Amazon Bedrock model access enabled (Claude Sonnet or Nova Lite)
-- IAM permissions: `bedrock-agentcore:*`, `bedrock:*`, `ecr:*`, `codebuild:*`, `s3:*`, `logs:*`, `iam:CreateRole`
+- Amazon Bedrock model access is enabled by default — no manual approval needed
+- IAM permissions: `bedrock-agentcore:*`, `bedrock-agentcore-control:*`, `bedrock:*`, `ecr:*`, `codebuild:*`, `s3:*`, `logs:*`, `iam:CreateRole`
 - Docker — optional, only needed for Jaeger in `observability.ipynb`

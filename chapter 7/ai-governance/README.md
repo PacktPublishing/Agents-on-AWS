@@ -1,6 +1,6 @@
 # AI Governance
 
-Companion code for the governance section of Chapter 7 of *Agents on AWS*.
+Companion code for the governance section of Chapter 7 of *AI Agents on AWS*.
 
 This folder covers how to enforce policies on what your agent is allowed to say and do. More notebooks will be added here as the chapter expands.
 

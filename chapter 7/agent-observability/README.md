@@ -1,6 +1,6 @@
 # Agent Observability
 
-Companion code for the observability section of Chapter 7 of *Agents on AWS*.
+Companion code for the observability section of Chapter 7 of *AI Agents on AWS*.
 
 ## Notebooks and Files
 
